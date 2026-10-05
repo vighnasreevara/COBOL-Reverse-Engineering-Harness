@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rules artifact (stage 5)",
+  "type": "object",
+  "required": ["schema_version", "meta", "stats", "rules", "groups"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "meta": {"type": "object", "required": ["generator", "generator_version", "generated_at", "logic_sha256", "parser_sha256", "root"],
+             "properties": {"generator": {"const": "harness.rules"}}},
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "program", "paragraph", "file", "line", "source", "kind", "category", "significance",
+                     "business", "signals", "condition", "fields", "outcomes", "reachable"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^rule:"},
+          "category": {"enum": ["validation", "limit", "calculation", "routing", "state_change", "decision",
+                                "error_handling", "control_flow"]},
+          "significance": {"type": "integer", "minimum": 1, "maximum": 5},
+          "line": {"type": "integer", "minimum": 1},
+          "signals": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+        }
+      }
+    },
+    "groups": {"type": "array", "items": {"type": "object", "required": ["id", "category", "condition", "rules", "programs"]}}
+  }
+}

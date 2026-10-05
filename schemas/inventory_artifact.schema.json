@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vighnasreevara/COBOL-Reverse-Engineering-Harness/schemas/inventory_artifact.schema.json",
+  "title": "Inventory artifact",
+  "description": "Output of stage 1 (inventory). Every count in stats is derived from the arrays; every reference carries a source path and line.",
+  "type": "object",
+  "required": ["schema_version", "meta", "stats", "files", "programs", "copybooks", "jcl", "cics", "bms",
+               "db2", "vsam", "references", "graph", "copybook_map", "issues"],
+  "additionalProperties": false,
+  "$defs": {
+    "nodeId": {"type": "string", "pattern": "^[a-z_]+:.+$"},
+    "path": {"type": "string", "minLength": 1},
+    "line": {"type": "integer", "minimum": 1},
+    "nullableString": {"type": ["string", "null"]},
+    "countMap": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "step": {
+      "type": "object",
+      "required": ["name", "order", "line", "program", "proc", "run_program", "utility", "params", "dds"],
+      "properties": {
+        "name": {"$ref": "#/$defs/nullableString"},
+        "order": {"type": "integer", "minimum": 1},
+        "line": {"$ref": "#/$defs/line"},
+        "program": {"$ref": "#/$defs/nullableString"},
+        "proc": {"$ref": "#/$defs/nullableString"},
+        "run_program": {"$ref": "#/$defs/nullableString"},
+        "utility": {"type": "boolean"},
+        "params": {"type": "object"},
+        "dds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "line", "dsn", "disp", "sysout", "dummy", "instream_lines"],
+            "properties": {
+              "name": {"$ref": "#/$defs/nullableString"},
+              "line": {"$ref": "#/$defs/line"},
+              "dsn": {"$ref": "#/$defs/nullableString"},
+              "disp": {"$ref": "#/$defs/nullableString"},
+              "sysout": {"$ref": "#/$defs/nullableString"},
+              "dummy": {"type": "boolean"},
+              "instream_lines": {"type": ["integer", "null"]}
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "meta": {
+      "type": "object",
+      "required": ["generator", "generator_version", "generated_at", "root", "scope"],
+      "properties": {
+        "generator": {"const": "harness.inventory"},
+        "generator_version": {"type": "string"},
+        "generated_at": {"$ref": "#/$defs/nullableString"},
+        "root": {"type": "string"},
+        "scope": {
+          "type": "object",
+          "required": ["mode", "entry_points"],
+          "properties": {
+            "mode": {"enum": ["full", "entry_points"]},
+            "entry_points": {"type": "array", "items": {"$ref": "#/$defs/nodeId"}}
+          }
+        },
+        "exclude_dirs": {"type": "array", "items": {"type": "string"}},
+        "exclude_globs": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "stats": {
+      "type": "object",
+      "required": ["files", "programs", "copybooks", "jcl_jobs", "references", "graph_nodes", "graph_edges", "issues"]
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind", "size_bytes", "lines", "sha256", "encoding", "line_ending", "final_newline"],
+        "properties": {
+          "path": {"$ref": "#/$defs/path"},
+          "kind": {"enum": ["program", "copybook", "jcl", "csd", "bms", "ddl", "idcams", "control", "listing", "doc", "other"]},
+          "size_bytes": {"type": "integer", "minimum": 0},
+          "lines": {"type": "integer", "minimum": 0},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "encoding": {"type": "string"},
+          "line_ending": {"enum": ["crlf", "lf", "cr", "mixed", "none"]},
+          "final_newline": {"type": "boolean"}
+        }
+      }
+    },
+    "programs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "program_id", "member", "path", "kind", "entry_point", "source_format",
+                     "procedure_using", "has_sql", "has_cics", "has_dli", "terminators", "file_controls",
+                     "executed_by", "called_by", "datasets"],
+        "properties": {
+          "id": {"$ref": "#/$defs/nodeId"},
+          "name": {"type": "string"},
+          "program_id": {"$ref": "#/$defs/nullableString"},
+          "member": {"type": "string"},
+          "path": {"$ref": "#/$defs/path"},
+          "kind": {"enum": ["batch", "subroutine", "online", "unknown"]},
+          "entry_point": {"type": "boolean"},
+          "source_format": {"enum": ["fixed", "free", null]},
+          "procedure_using": {"type": "array", "items": {"type": "string"}},
+          "file_controls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["select", "assign", "ddname", "organization", "line"]
+            }
+          },
+          "executed_by": {"type": "array", "items": {"$ref": "#/$defs/nodeId"}},
+          "called_by": {"type": "array", "items": {"$ref": "#/$defs/nodeId"}},
+          "datasets": {"type": "array", "items": {"type": "object", "required": ["job", "step", "ddname", "select"]}}
+        }
+      }
+    },
+    "copybooks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "member", "path", "content_kind", "used_by"],
+        "properties": {
+          "id": {"$ref": "#/$defs/nodeId"},
+          "content_kind": {"enum": ["data", "procedure", "mixed", "other"]},
+          "used_by": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "jcl": {
+      "type": "object",
+      "required": ["jobs", "procs"],
+      "properties": {
+        "jobs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "path", "line", "steps"],
+            "properties": {"steps": {"type": "array", "items": {"$ref": "#/$defs/step"}}}
+          }
+        },
+        "procs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "path", "line", "instream", "steps"],
+            "properties": {"steps": {"type": "array", "items": {"$ref": "#/$defs/step"}}}
+          }
+        }
+      }
+    },
+    "cics": {
+      "type": "object",
+      "required": ["resources"],
+      "properties": {
+        "resources": {
+          "type": "array",
+          "items": {"type": "object", "required": ["id", "type", "name", "path", "line", "attributes"]}
+        }
+      }
+    },
+    "bms": {
+      "type": "object",
+      "required": ["mapsets"],
+      "properties": {
+        "mapsets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "path", "line", "maps"],
+            "properties": {
+              "maps": {
+                "type": "array",
+                "items": {"type": "object", "required": ["id", "name", "line", "field_count", "fields"]}
+              }
+            }
+          }
+        }
+      }
+    },
+    "db2": {
+      "type": "object",
+      "required": ["tables", "views", "indexes", "objects"],
+      "properties": {
+        "tables": {
+          "type": "array",
+          "items": {"type": "object", "required": ["id", "name", "path", "line", "columns", "primary_key", "foreign_keys"]}
+        }
+      }
+    },
+    "vsam": {
+      "type": "object",
+      "required": ["definitions"],
+      "properties": {
+        "definitions": {
+          "type": "array",
+          "items": {"type": "object", "required": ["id", "name", "kind", "organization", "path", "line", "source"]}
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "from", "to", "target", "resolution", "path", "line"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^R[0-9]{5,}$"},
+          "type": {"enum": ["COPY", "SQL_INCLUDE", "STATIC_CALL", "DYNAMIC_CALL", "CICS_LINK", "CICS_XCTL",
+                            "CICS_LOAD", "CICS_RETURN_TRANSID", "CICS_START_TRANSID", "CICS_MAP", "CICS_FILE",
+                            "CICS_QUEUE", "SQL_TABLE", "SQL_CALL", "JCL_EXEC", "JCL_RUN", "JCL_PROC",
+                            "JCL_INCLUDE", "JCL_DD", "IDCAMS_DEFINE", "CSD_TRANSACTION", "CSD_FILE",
+                            "PROGRAM_DATASET", "DB2_FOREIGN_KEY", "DB2_VIEW_BASE"]},
+          "from": {"$ref": "#/$defs/nodeId"},
+          "to": {"oneOf": [{"$ref": "#/$defs/nodeId"}, {"type": "null"}]},
+          "target": {"$ref": "#/$defs/nullableString"},
+          "resolution": {"enum": ["resolved", "unresolved", "ambiguous", "system", "external", "dynamic",
+                                  "temporary", "undefined"]},
+          "path": {"$ref": "#/$defs/path"},
+          "line": {"$ref": "#/$defs/line"},
+          "division": {"enum": ["IDENTIFICATION", "ENVIRONMENT", "DATA", "PROCEDURE"]},
+          "details": {"type": "object"}
+        }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "required": ["nodes", "edges"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "kind", "name", "status"],
+            "properties": {
+              "id": {"$ref": "#/$defs/nodeId"},
+              "status": {"enum": ["defined", "missing", "system", "external", "dynamic", "temporary", "undefined"]}
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "to", "type", "resolution", "count", "references"],
+            "properties": {
+              "count": {"type": "integer", "minimum": 1},
+              "references": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+            }
+          }
+        }
+      }
+    },
+    "copybook_map": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}},
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "code", "message"],
+        "properties": {
+          "severity": {"enum": ["error", "warning", "info"]},
+          "code": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+          "message": {"type": "string", "minLength": 1},
+          "path": {"$ref": "#/$defs/path"},
+          "line": {"$ref": "#/$defs/line"},
+          "subject": {"$ref": "#/$defs/nodeId"},
+          "details": {"type": "object"}
+        }
+      }
+    }
+  }
+}

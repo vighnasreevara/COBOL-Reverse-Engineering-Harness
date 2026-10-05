@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Synthesis artifact (stage 7)",
+  "type": "object",
+  "required": ["schema_version", "meta", "stats", "sections", "entry_points", "gaps", "annotation_problems"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "meta": {"type": "object", "required": ["generator", "generator_version", "generated_at", "system", "root", "inputs"],
+             "properties": {"generator": {"const": "harness.synthesis"}}},
+    "sections": {"type": "array", "items": {"type": "object", "required": ["id", "title"],
+                                             "properties": {"id": {"type": "string", "pattern": "^brd:"}}}},
+    "entry_points": {"type": "array", "items": {"type": "object", "required": ["id", "kind", "programs", "path", "line"]}},
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "category", "code", "subject", "stage", "title", "count", "details", "locations", "action"],
+        "properties": {"id": {"type": "string", "pattern": "^gap:"}, "severity": {"enum": ["high", "medium", "low"]}}
+      }
+    },
+    "annotation_problems": {"type": "array", "items": {"type": "string"}}
+  }
+}

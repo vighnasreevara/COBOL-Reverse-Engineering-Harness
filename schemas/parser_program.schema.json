@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Parsed program (stage 2)",
+  "description": "Structure of one COBOL program after copybook expansion: data entries, statement tree, paragraph control flow. Every element carries the file and line it came from (copybook lines point at the copybook).",
+  "type": "object",
+  "required": ["schema_version", "program", "sources", "copy_expansions", "environment", "data", "procedure", "cfg", "metrics", "issues"],
+  "$defs": {
+    "loc": {
+      "type": "object",
+      "required": ["line", "file"],
+      "properties": {"line": {"type": "integer", "minimum": 1}, "file": {"type": "string", "minLength": 1}}
+    },
+    "statement": {
+      "allOf": [{"$ref": "#/$defs/loc"}],
+      "type": "object",
+      "required": ["verb", "line", "file", "text"],
+      "properties": {
+        "verb": {"type": "string"},
+        "text": {"type": "string"},
+        "reads": {"type": "array", "items": {"type": "string"}},
+        "writes": {"type": "array", "items": {"type": "string"}},
+        "then": {"type": "array", "items": {"$ref": "#/$defs/statement"}},
+        "else": {"type": "array", "items": {"$ref": "#/$defs/statement"}},
+        "body": {"type": "array", "items": {"$ref": "#/$defs/statement"}},
+        "at_end": {"type": "array", "items": {"$ref": "#/$defs/statement"}},
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["line", "file", "conditions", "other", "statements"],
+            "properties": {"statements": {"type": "array", "items": {"$ref": "#/$defs/statement"}}}
+          }
+        },
+        "phrases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["phrase", "statements"],
+            "properties": {"statements": {"type": "array", "items": {"$ref": "#/$defs/statement"}}}
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "program": {
+      "type": "object",
+      "required": ["id", "name", "path", "kind"],
+      "properties": {"id": {"type": "string", "pattern": "^program:"}}
+    },
+    "sources": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "copy_expansions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["member", "kind", "status", "at_file", "at_line", "depth"],
+        "properties": {"status": {"enum": ["expanded", "missing", "system", "recursive", "too_deep"]}}
+      }
+    },
+    "environment": {"type": "object", "required": ["file_control"]},
+    "data": {
+      "type": "object",
+      "required": ["files", "entries", "sql_declared_tables", "misplaced_procedure_names"],
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["level", "name", "line", "file", "section", "fd", "clauses", "text"],
+            "properties": {"level": {"type": "integer", "minimum": 1, "maximum": 88}}
+          }
+        }
+      }
+    },
+    "procedure": {
+      "type": "object",
+      "required": ["using", "sections", "paragraphs"],
+      "properties": {
+        "paragraphs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "section", "line", "file", "end_line", "statements"],
+            "properties": {"statements": {"type": "array", "items": {"$ref": "#/$defs/statement"}}}
+          }
+        }
+      }
+    },
+    "cfg": {
+      "type": "object",
+      "required": ["entry", "nodes", "edges", "dead_paragraphs", "recursive_cycles", "undefined_targets"],
+      "properties": {
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "to", "type", "line", "file"],
+            "properties": {"type": {"type": "string"}}
+          }
+        }
+      }
+    },
+    "metrics": {"type": "object", "required": ["paragraphs", "statements", "data_entries", "dead_paragraphs"]},
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "code", "message"],
+        "properties": {"severity": {"enum": ["error", "warning", "info"]}}
+      }
+    }
+  }
+}

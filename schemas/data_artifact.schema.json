@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Data artifact (stage 3)",
+  "description": "Record layouts with computed sizes and offsets, the data model (tables, datasets, CICS files) and data flows between programs and data stores.",
+  "type": "object",
+  "required": ["schema_version", "meta", "stats", "records", "fields", "conditions", "programs", "entities",
+               "relationships", "data_flows", "host_variables", "issues"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "meta": {
+      "type": "object",
+      "required": ["generator", "generator_version", "generated_at", "inventory_sha256", "parser_sha256", "root"],
+      "properties": {"generator": {"const": "harness.data"}}
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "level", "source", "file", "line", "size", "fields", "used_by"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^record:"},
+          "source": {"enum": ["copybook", "program"]},
+          "size": {"type": ["integer", "null"], "minimum": 0},
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "name", "qualified_name", "level", "category", "usage", "size", "offset", "file", "line", "conditions", "elementary"]
+            }
+          }
+        }
+      }
+    },
+    "fields": {
+      "type": "array",
+      "items": {"type": "object", "required": ["id", "record", "qualified_name", "category", "size", "offset", "file", "line"],
+                "properties": {"id": {"type": "string", "pattern": "^field:"}}}
+    },
+    "conditions": {
+      "type": "array",
+      "items": {"type": "object", "required": ["id", "name", "field", "record", "values", "file", "line"],
+                "properties": {"id": {"type": "string", "pattern": "^condition:"}}}
+    },
+    "programs": {
+      "type": "array",
+      "items": {"type": "object", "required": ["id", "name", "records", "files", "sql_tables", "cics_files"]}
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name"],
+        "properties": {"kind": {"enum": ["dataset", "table", "cics_file", "view", "file"]}}
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {"type": "object", "required": ["type", "from", "to", "evidence", "confidence"]}
+    },
+    "data_flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["program", "entity", "direction", "via", "file", "line"],
+        "properties": {"direction": {"enum": ["read", "write", "update", "delete", "unknown"]}}
+      }
+    },
+    "host_variables": {"type": "array", "items": {"type": "object", "required": ["program", "table", "column", "host_variable", "operation", "file", "line"]}},
+    "issues": {
+      "type": "array",
+      "items": {"type": "object", "required": ["severity", "code", "message"],
+                "properties": {"severity": {"enum": ["error", "warning", "info"]}}}
+    }
+  }
+}

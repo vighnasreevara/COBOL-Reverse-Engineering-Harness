@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Logic manifest (stage 4)",
+  "type": "object",
+  "required": ["schema_version", "meta", "stats", "programs", "issues"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "meta": {"type": "object", "required": ["generator", "generator_version", "generated_at", "parser_sha256", "data_sha256", "root"],
+             "properties": {"generator": {"const": "harness.logic"}}},
+    "programs": {
+      "type": "array",
+      "items": {"type": "object", "required": ["id", "name", "path", "kind", "output", "metrics", "branch_ids", "loop_ids"]}
+    },
+    "issues": {"type": "array", "items": {"type": "object", "required": ["severity", "code", "message"]}}
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Program logic (stage 4)",
+  "type": "object",
+  "required": ["schema_version", "program", "context", "entry", "outline", "paragraphs", "branches", "loops", "io", "data_flow", "metrics"],
+  "$defs": {
+    "loc": {"type": "object", "required": ["file", "line"],
+            "properties": {"file": {"type": "string"}, "line": {"type": "integer", "minimum": 1}}},
+    "outline": {
+      "type": "object",
+      "required": ["kind", "file", "line", "when"],
+      "properties": {
+        "kind": {"type": "string"},
+        "when": {"type": "array", "items": {"type": "string"}},
+        "children": {"type": "array", "items": {"$ref": "#/$defs/outline"}}
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "program": {"type": "object", "required": ["id", "name", "path", "kind"]},
+    "context": {"type": "object", "required": ["executed_by", "called_by", "using", "data_flows", "files"]},
+    "outline": {"type": "array", "items": {"$ref": "#/$defs/outline"}},
+    "paragraphs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "file", "line", "end_line", "reachable", "complexity", "statements", "performed_by", "pseudocode"],
+        "properties": {
+          "complexity": {"type": "integer", "minimum": 1},
+          "pseudocode": {
+            "type": "array",
+            "items": {"type": "object", "required": ["file", "line", "depth", "text"],
+                      "properties": {"depth": {"type": "integer", "minimum": 0}}}
+          }
+        }
+      }
+    },
+    "branches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "paragraph", "file", "line", "condition", "fields", "conditions_explained", "outcomes"],
+        "properties": {"id": {"type": "string", "pattern": "^branch:"},
+                       "kind": {"enum": ["IF", "WHEN", "SEARCH WHEN", "PHRASE"]}}
+      }
+    },
+    "loops": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "paragraph", "file", "line", "type", "condition", "condition_fields", "fields_updated_in_loop", "termination"],
+        "properties": {"id": {"type": "string", "pattern": "^loop:"},
+                       "termination": {"enum": ["counted", "condition_updated_in_loop", "potential_infinite", "unknown"]}}
+      }
+    },
+    "io": {"type": "object", "required": ["files", "sql", "cics", "calls"]},
+    "metrics": {"type": "object", "required": ["paragraphs", "branches", "loops", "complexity", "pseudocode_lines"]}
+  }
+}

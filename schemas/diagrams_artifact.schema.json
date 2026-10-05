@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Diagrams artifact (stage 6)",
+  "type": "object",
+  "required": ["schema_version", "meta", "stats", "diagrams"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "meta": {"type": "object", "required": ["generator", "generator_version", "generated_at", "root"],
+             "properties": {"generator": {"const": "harness.diagram"}}},
+    "diagrams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "file", "type", "title", "subject", "nodes", "edges", "truncated", "sources", "lint"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^diagram:"},
+          "type": {"enum": ["flowchart", "sequenceDiagram", "erDiagram"]},
+          "lint": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}
