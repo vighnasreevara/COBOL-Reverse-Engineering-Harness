@@ -1,6 +1,6 @@
 """Deterministic tooling for the COBOL reverse engineering harness.
 
-Agents orchestrate and interpret; everything that can be computed exactly
+Agents verify and interpret; everything that can be computed exactly
 (scanning, parsing, counting, graph building) lives in this package.
 """
 

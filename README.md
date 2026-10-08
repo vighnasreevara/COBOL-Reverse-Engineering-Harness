@@ -9,7 +9,7 @@ The harness pairs a **deterministic analysis engine** with a **team of AI agents
 
 Every fact cites the source line it came from. Every sentence an agent writes is machine-checked before it reaches a deliverable.
 
-> **Status:** all eight stages and nine agents are implemented, schema-validated and covered by automated tests. They run end to end with one command.
+> **Status:** all eight stages and their eight agents are implemented, schema-validated and covered by automated tests. They run end to end with one command.
 
 ---
 
@@ -30,31 +30,30 @@ Every fact cites the source line it came from. Every sentence an agent writes is
 
 **Part III: The agents in detail**
 - [10. Agent anatomy](#10-agent-anatomy)
-- [11. Agent 0: Pipeline orchestrator](#11-agent-0-pipeline-orchestrator)
-- [12. Agent 1: Inventory](#12-agent-1-inventory)
-- [13. Agent 2: Parser](#13-agent-2-parser)
-- [14. Agent 3: Data](#14-agent-3-data)
-- [15. Agent 4: Logic](#15-agent-4-logic)
-- [16. Agent 5: Rules](#16-agent-5-rules)
-- [17. Agent 6: Diagrams](#17-agent-6-diagrams)
-- [18. Agent 7: Synthesis (BRD)](#18-agent-7-synthesis-brd)
-- [19. Agent 8: Knowledge graph](#19-agent-8-knowledge-graph)
+- [11. Agent 1: Inventory](#11-agent-1-inventory)
+- [12. Agent 2: Parser](#12-agent-2-parser)
+- [13. Agent 3: Data](#13-agent-3-data)
+- [14. Agent 4: Logic](#14-agent-4-logic)
+- [15. Agent 5: Rules](#15-agent-5-rules)
+- [16. Agent 6: Diagrams](#16-agent-6-diagrams)
+- [17. Agent 7: Synthesis (BRD)](#17-agent-7-synthesis-brd)
+- [18. Agent 8: Knowledge graph](#18-agent-8-knowledge-graph)
 
 **Part IV: Using the harness**
-- [20. Installation](#20-installation)
-- [21. Running an analysis](#21-running-an-analysis)
-- [22. A worked example](#22-a-worked-example)
-- [23. Command reference](#23-command-reference)
-- [24. Output reference](#24-output-reference)
-- [25. Gap and risk register](#25-gap-and-risk-register)
+- [19. Installation](#19-installation)
+- [20. Running an analysis](#20-running-an-analysis)
+- [21. A worked example](#21-a-worked-example)
+- [22. Command reference](#22-command-reference)
+- [23. Output reference](#23-output-reference)
+- [24. Gap and risk register](#24-gap-and-risk-register)
 
 **Part V: Engineering**
-- [26. Repository layout](#26-repository-layout)
-- [27. Quality: validation and testing](#27-quality-validation-and-testing)
-- [28. Extending the harness](#28-extending-the-harness)
-- [29. Known limitations](#29-known-limitations)
-- [30. Glossary](#30-glossary)
-- [31. License](#31-license)
+- [25. Repository layout](#25-repository-layout)
+- [26. Quality: validation and testing](#26-quality-validation-and-testing)
+- [27. Extending the harness](#27-extending-the-harness)
+- [28. Known limitations](#28-known-limitations)
+- [29. Glossary](#29-glossary)
+- [30. License](#30-license)
 
 ---
 
@@ -210,7 +209,6 @@ flowchart TB
         A2[("JSON schemas and validators")]
     end
     subgraph L4["Layer 4: Agent layer"]
-        G0["0 Pipeline orchestrator"]
         G1["Stage agents 1 to 8 and their skills"]
     end
     subgraph L5["Layer 5: Trust gate"]
@@ -233,8 +231,7 @@ flowchart TB
     E7 --> E8
     E8 --> A1
     A2 -.->|"validates"| A1
-    A1 --> G0
-    G0 --> G1
+    A1 --> G1
     G1 -->|"annotations"| T1
     T1 -->|"accepted"| D1
     A1 --> D2
@@ -247,7 +244,7 @@ flowchart TB
 | Source estate | Exported mainframe members, in any folder layout | Plain text files |
 | Deterministic engine | Parse, resolve, measure, analyse, render | Python 3.10+, no runtime dependencies |
 | Artifact store | One JSON artifact per stage, recording the hashes of its inputs | JSON and JSON Schema (draft 2020-12) |
-| Agent layer | Orchestrate, verify, explain | Claude Code agents and skills; GitHub Copilot custom agents |
+| Agent layer | Verify and explain | Claude Code agents and skills; GitHub Copilot custom agents |
 | Trust gate | Accept only evidence-backed meaning | `harness check-annotations` |
 | Deliverables | Human-facing outputs | Markdown, Mermaid, CSV, Cypher |
 
@@ -315,31 +312,29 @@ An annotation looks like this:
 ```mermaid
 sequenceDiagram
     actor User
-    participant Orch as Agent 0 Orchestrator
     participant Eng as Engine run-all
     participant Store as Artifact store
     participant Agents as Agents 1 to 8
     participant Gate as Annotation gate
-    User->>Orch: Analyse the system in src
-    Orch->>Eng: run-all --root src --system NAME
+    User->>Eng: run-all --root src --system NAME
     loop Stages 1 to 8
         Eng->>Store: Write the stage artifact
         Eng->>Eng: Validate schema and self-checks
     end
     alt A stage fails
-        Eng-->>Orch: Stop and report the stage and its problems
+        Eng-->>User: Stop and report the stage and its problems
     else All stages pass
-        Eng-->>Orch: All 8 stages validated
+        Eng-->>User: All 8 stages validated
         loop Each stage agent in order
-            Orch->>Agents: Review stage N
+            User->>Agents: Run agent N
             Agents->>Store: Read facts and open cited source lines
             Agents->>Store: Write review and annotations
             Agents->>Gate: Check annotations
             Gate-->>Agents: Accepted, or problems to fix
+            Agents->>Eng: Re-run stage N with the annotations
         end
-        Orch->>Eng: Re-run synthesize and graph
         Eng->>Store: BRD, gap register, graph export
-        Orch-->>User: BRD location, gaps by severity, key findings, coverage
+        Agents-->>User: Reviews, BRD, gaps by severity
     end
 ```
 
@@ -462,7 +457,6 @@ flowchart LR
 
 | Agent | Skill | Engine command | What the agent itself contributes |
 |---|---|---|---|
-| 0 Pipeline | all of them | `run-all` | orchestration and the final report |
 | 1 Inventory | inventory-scanner | `inventory` | verifies every warning |
 | 2 Parser | cobol-parser | `parse` | verifies findings and spot-checks structure |
 | 3 Data | data-modeler | `data` | entity and record descriptions |
@@ -472,43 +466,7 @@ flowchart LR
 | 7 Synthesis | brd-writer | `synthesize` | the BRD's narrative chapters |
 | 8 Graph | graph-exporter | `graph` | export checks, and optionally loading and querying |
 
-## 11. Agent 0: Pipeline orchestrator
-
-**Purpose.** Run a complete analysis of a COBOL system from end to end and report the outcome.
-
-**When it acts.** At the start of an engagement, and whenever the source changes.
-
-**Business value.** One instruction produces the full set of deliverables with a consistent method. Analyses are repeatable across systems and teams.
-
-```mermaid
-flowchart TD
-    A["Inputs<br/>ROOT, SYSTEM, optional ENTRY and EXCLUDE"]
-    B["Engine run-all"]
-    F["Report the failing stage and stop"]
-    C["Agent 1 reviews the inventory"]
-    D["Agents 2 to 7 in order<br/>review, annotate, re-run the stage"]
-    E["Agent 8 when a graph is wanted"]
-    G["Final synthesize and graph"]
-    H["Report<br/>BRD path, gaps by severity,<br/>key findings, coverage"]
-    A --> B
-    B -->|"a stage fails"| F
-    B -->|"all pass"| C
-    C --> D
-    D --> E
-    E --> G
-    G --> H
-```
-
-| Input | Default |
-|---|---|
-| `ROOT` | `src` |
-| `SYSTEM` | the name of the ROOT folder |
-| `ENTRY` | optional; limits the analysis to what given jobs, transactions or programs reach |
-| `EXCLUDE` | optional path globs, for example `templates/*` |
-
-For large systems the orchestrator asks before writing a summary for every program, and offers to start with the entry points.
-
-## 12. Agent 1: Inventory
+## 11. Agent 1: Inventory
 
 **Purpose.** Establish what exists and how it connects, with proof for every link.
 
@@ -596,7 +554,7 @@ flowchart LR
 2. Opens every error and warning at its cited line and classifies it as `confirmed`, `false positive` or `environmental`.
 3. Writes `inventory_review.md`.
 
-## 13. Agent 2: Parser
+## 12. Agent 2: Parser
 
 **Purpose.** Turn source text into verified structure: every data entry, every statement, and the control flow between paragraphs.
 
@@ -664,7 +622,7 @@ flowchart LR
 3. Compares the statement tree of the largest programs with their source.
 4. Writes `parser_review.md`.
 
-## 14. Agent 3: Data
+## 13. Agent 3: Data
 
 **Purpose.** Know every record byte by byte, and every movement of data between programs and stores.
 
@@ -735,7 +693,7 @@ For example, `ORD-PRICE PIC S9(7)V99 COMP-3` has 9 digits, so it takes 9 / 2 + 1
 4. Checks its annotations.
 5. Writes `data_review.md`, including data lineage and open questions for SMEs.
 
-## 15. Agent 4: Logic
+## 14. Agent 4: Logic
 
 **Purpose.** Explain what each program does, step by step and under which conditions, so that a reader who does not know COBOL can follow it.
 
@@ -806,7 +764,7 @@ line 25  RETURN TO CALLER
    - anything surprising.
 4. Checks its annotations and writes `logic_review.md`.
 
-## 16. Agent 5: Rules
+## 15. Agent 5: Rules
 
 **Purpose.** Produce a catalogue of the business rules the system enforces. Each rule is named in business language and anchored to the line of code that enforces it.
 
@@ -874,7 +832,7 @@ The rules found in the built-in test system:
 4. Checks its annotations and re-renders the catalogue.
 5. Writes `rules_review.md` with the key rules, rules that never run, inconsistencies and coverage.
 
-## 17. Agent 6: Diagrams
+## 16. Agent 6: Diagrams
 
 **Purpose.** Show the system visually, with every diagram generated from verified facts.
 
@@ -948,7 +906,7 @@ The galleries render directly on GitHub and in the VS Code Markdown preview.
 2. Captions each system diagram, and any diagram that shows a finding.
 3. Writes `diagram_review.md`.
 
-## 18. Agent 7: Synthesis (BRD)
+## 17. Agent 7: Synthesis (BRD)
 
 **Purpose.** Produce the Business Requirements Document: the system explained for business readers, with a prioritised register of gaps and risks.
 
@@ -1006,7 +964,7 @@ flowchart LR
 3. Reads the final BRD as its audience would: no unexplained jargon, no claim without a citation, no contradiction between chapters.
 4. Writes `synthesis_review.md` with coverage and open SME questions.
 
-## 19. Agent 8: Knowledge graph
+## 18. Agent 8: Knowledge graph
 
 **Purpose.** Load the whole model into a graph database for impact analysis and exploration.
 
@@ -1067,7 +1025,7 @@ flowchart LR
 
 # Part IV: Using the harness
 
-## 20. Installation
+## 19. Installation
 
 Requires Python 3.10 or later.
 
@@ -1080,7 +1038,7 @@ python -m venv .venv
 
 The engine has no runtime dependencies. The `dev` extra adds `pytest` and `jsonschema`; with `jsonschema` installed, schema validation is strict.
 
-## 21. Running an analysis
+## 20. Running an analysis
 
 **1. Place the source.** Copy the exported members into `src/`, in any folder layout.
 
@@ -1095,10 +1053,12 @@ The engine has no runtime dependencies. The `dev` extra adds `pytest` and `jsons
 
 **3. Add meaning with the agents.**
 
-- In Claude Code, ask the `0_pipeline` agent to analyse the system.
-- In GitHub Copilot, select the `0_pipeline` custom agent.
+Run the stage agents in order, `1_inventory` through `8_graph`:
 
-It runs the engine, then performs each stage agent's review and annotation work.
+- in Claude Code, ask for the agent by name (for example "use the 3_data agent");
+- in GitHub Copilot, select the custom agent of the same name.
+
+Each agent re-runs its stage, reviews the findings against the source and writes checked annotations. `8_graph` is optional.
 
 **4. Read the results.** Start with `output/final_report/brd.md`, then `output/rules/rules_catalog.md` and `output/diagram/diagrams.md`.
 
@@ -1112,7 +1072,7 @@ It runs the engine, then performs each stage agent's review and annotation work.
 .venv/Scripts/python.exe -m harness run-all --root src --exclude "templates/*"
 ```
 
-## 22. A worked example
+## 21. A worked example
 
 The test suite contains a small order-processing system:
 
@@ -1162,7 +1122,7 @@ What the run establishes, with no manual work:
   - the order total is computed with rounding;
   - a price above 10,000 puts the order on hold.
 
-## 23. Command reference
+## 22. Command reference
 
 Every command has help: `python -m harness <command> --help`.
 
@@ -1189,7 +1149,7 @@ Every stage command also accepts `--no-timestamp` for byte-identical reruns.
 | `1` | the artifact was written but failed validation |
 | `2` | missing input or bad arguments |
 
-## 24. Output reference
+## 23. Output reference
 
 ```text
 output/
@@ -1207,7 +1167,7 @@ output/
 
 Every artifact has a schema in `schemas/`. Each records its generator, its generator version, when it was generated, and the SHA-256 of its inputs, so any deliverable can be traced to the exact artifacts it was built from.
 
-## 25. Gap and risk register
+## 24. Gap and risk register
 
 Synthesis consolidates every finding into one register.
 
@@ -1232,7 +1192,7 @@ Synthesis consolidates every finding into one register.
 
 # Part V: Engineering
 
-## 26. Repository layout
+## 25. Repository layout
 
 ```text
 .
@@ -1257,7 +1217,7 @@ Synthesis consolidates every finding into one register.
 └── output/                    generated by runs
 ```
 
-## 27. Quality: validation and testing
+## 26. Quality: validation and testing
 
 **Validation on every run.** Besides its JSON Schema, every stage checks its artifact against itself:
 
@@ -1284,7 +1244,7 @@ Synthesis consolidates every finding into one register.
 - the agent definitions staying in sync across platforms;
 - a full end-to-end run of all eight stages on the built-in order-processing system.
 
-## 28. Extending the harness
+## 27. Extending the harness
 
 **Adding a finding.**
 
@@ -1316,7 +1276,7 @@ flowchart LR
 1. Edit the signal patterns in `harness/rules/build.py`: status fields, error text, limit names and counters.
 2. Add test cases for the new patterns.
 
-## 29. Known limitations
+## 28. Known limitations
 
 | Area | Limitation |
 |---|---|
@@ -1328,7 +1288,7 @@ flowchart LR
 | Diagrams | Diagrams are linted structurally; Mermaid itself is not executed during the run. |
 | Graph | The export is validated. Loading it into Neo4j is an optional step, done manually or by the agent. |
 
-## 30. Glossary
+## 29. Glossary
 
 | Term | Meaning |
 |---|---|
@@ -1350,6 +1310,6 @@ flowchart LR
 | Dead code | Code that no execution path can reach |
 | Gap | A consolidated finding with a severity, its locations and a recommended action |
 
-## 31. License
+## 30. License
 
 Released under the [MIT License](LICENSE). Copyright (c) 2026 vighnasreevara.
